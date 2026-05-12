@@ -10,19 +10,16 @@ ________\/\\\_______________\///\\\\\/______\/\\\\\\\\\\\__\/\\\_______\/\\\__\/
 _________\///__________________\/////________\///////////___\///________\///___\///________\///__\///////////________\///______________\///__
 Copyright, Polarity 2025
 
--- Development Team --
-| Founder < Thegameinglemon10 [Thegaminglemon10#0076]
-
 -- FILE INFORMATION --
 
 File Name: PromptController.lua
-Written By: Thegameinglemon10
+Written By: JestaLemon
 Creation Date: 08/02/2021
-Version: 9.0.0
+Version: 9.0.1
 
 -- Last Edit --
-Editor: Thegameinglemon10
-Date: 01/17/2026
+Editor: JestaLemon
+Date: 04/05/2026
 
 -- Description --
 Connects to all interactions, displays the screen when the player 
@@ -42,8 +39,8 @@ v5.0.0: (06/11/22 - 06/13/22) Fuck proximity prompts, I'm using OOP. 3rd rewrite
 
 --[=[ VFS V.2 || IH V.6 ]=]--
 [02/06-08/2023] v6.0.0 (VFS V.2): 4th rewrite. Everything is working except holding. Will add holding later.
-v6.1.0: Added the capability to have interactions tied to the player's humanoid root part.
-v6.1.1: Removed the ability for cuffed players to use interactions.
+v6.1.0: Added the capability to have interactions tied to the player's root.
+v6.1.1: Added missing interaction requirement.
 
 v6.2.0: When instantly swapping from one interaction to the next, old input text and binds would not be cleared. Now a check is ran
 in the default loop. If the closest int is not the current registered int, we force unbind keys. Also fixed an error preventing 
@@ -51,8 +48,7 @@ addition inputs from being removed.
 
 [08/20/2023] v6.2.1: Named rigs no longer interfere with interactions.
 [08/28/2023] v6.2.2: Player interactions are now assigned additional distance
-to give them a lower priority in order to make interacting while grabbing a 
-suspect easier. Grabbed suspects also no longer block interaction visibility checks.
+to give them a lower priority.
 
 [09/07/2023] v6.3.0: Multiple close interactions are now fully supported. If the
 closest interaction can't be used, it will now check the 2nd, 3rd, ect closest.
@@ -60,9 +56,9 @@ closest interaction can't be used, it will now check the 2nd, 3rd, ect closest.
 
 --[=[ IH V.7 ]=]--
 [05/12/2024] v7.0.0: 5th rewrite. Added support for mouse interactions. Switched to a
-class based system. The interaction billboard can now be hidden. Integrated vehicles.
+class based system. The interaction board can now be hidden.
 
-[05/13/2024] v7.0.1: Fixed interaction billboards not being properly hidden.
+[05/13/2024] v7.0.1: Fixed interaction boards not being properly hidden.
 [05/29/2024] v7.0.2: Updated to handle new custom binding service.
 [06/03/2024] v7.0.3: Interaction controls are now passed out for external use.
 [06/22/2024] v7.1.0: Integrated live button changes.
@@ -74,24 +70,38 @@ class based system. The interaction billboard can now be hidden. Integrated vehi
 [04/05/2025] v8.0.1: Upgraded to the new RayKit library.
 
 --[=[ DEFOLD - v9 ]=]--
-[01/17/2026] v9.0.0: Rewritten for Defold. Welcome to Project DeepScan!
-
-Created for a game I hope to release on Steam someday. Watch below for demonstration.
-https://vimeo.com/1165441171?share=copy&fl=sv&fe=ci
+[01/17/2026] v9.0.0: Rewritten for Defold. Welcome to Project D.Y.E!
+[04/05/2026] v9.0.1: Added emmyLua type annotations.
 
 -- END HEADER --
 ]]--!strict
 
---// Constants
 
---// Dependencies
+--@ // TYPE DECLARATIONS \\ @--
+---@class (exact) PromptController
+---@field CharacterURL string
+---@field Prompts {number: PromptContext}
+---@field __index PromptController
+local PROMPT_CONTROLLER = {}
+PROMPT_CONTROLLER.__index = PROMPT_CONTROLLER
+
+--@ // DEPENDENCIES \\ @--
 local PromptsRegistry = require("example.modules.Prompts")
 
---// Controller API
-local CONTROLLER = {}
-CONTROLLER.__index = CONTROLLER
+--@ // GLOBALS \\ @--
 
-function CONTROLLER:GetDistance(myNodeURL)
+--@ // CONSTANTS \\ @--
+
+--@ // VARIABLES \\ @--
+
+--@ // FUNCTIONS \\ @--
+
+--@ // PROMPT_CONTROLLER API \\ @--
+
+---Returns the distance from the character to the provided node.
+---@param myNodeURL string
+---@return number
+function PROMPT_CONTROLLER:GetDistance(myNodeURL)
 	local myCharacterURL = self.CharacterURL
 
 	--> Fetch world positions
@@ -102,13 +112,19 @@ function CONTROLLER:GetDistance(myNodeURL)
 	return vmath.length((myCharacterPosition - myNodePosition))
 end
 
-function CONTROLLER:Validate(myNodeURL, myNodeContext)
+---Verifies if the player should be able to interact with the prompt.
+---@param myNodeURL string
+---@param myNodeContext PromptContext
+---@return boolean
+function PROMPT_CONTROLLER:Validate(myNodeURL, myNodeContext)
 	-- TODO: ADD RAYCAST VISIBILITY CHECKS LATER
 
-	return (myNodeContext.Verify and myNodeContext:Verify() or true)
+	return (myNodeContext.Verify and myNodeContext.Verify(myNodeURL) or true)
 end
 
-function CONTROLLER:GetClosestValidPrompt()
+---Finds the closest prompt to the player that they're able to interact with.
+---@return string?, PromptContext?
+function PROMPT_CONTROLLER:GetClosestValidPrompt()
 	--// List Nodes and Distances
 	local nodeDistanceMap = {}
 	local function mapNode(myNodeURL, myNodeContext)
@@ -148,6 +164,7 @@ function CONTROLLER:GetClosestValidPrompt()
 	return nil, nil --> No valid node found
 end
 
+--@ // MAIN \\ @--
 return {
 	new = function(characterURL, promptBoardURL)
 		if not go.exists(characterURL) then error("Invalid CharacterURL") end
@@ -156,7 +173,7 @@ return {
 		local myController = setmetatable({
 			CharacterURL = characterURL;
 			PromptBoardURL = promptBoardURL;
-		}, CONTROLLER)
+		}, PROMPT_CONTROLLER)
 		
 		myController.Prompts = PromptsRegistry(myController)
 		return myController
